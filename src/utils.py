@@ -33,7 +33,9 @@ def sample_trajectory(
 
         ############################
         # YOUR IMPLEMENTATION HERE #
-        
+        ac = policy.get_action(ob)
+        next_ob, rew, terminated, truncated, _ = env.step(ac)
+        rollout_done = bool(terminated or truncated)
         ############################
 
 

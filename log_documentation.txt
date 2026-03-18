@@ -1,0 +1,20 @@
+python run.py --env_name CartPole-v1 -n 200 -b 1000 -ngpu --learning_rate 8e-4 --discount 0.99 --layer_size 128 --exp_name cartpole(3:55)
+python run.py --env_name CartPole-v1 -n 200 -b 1000 -ngpu -rtg --learning_rate 8e-4 --discount 0.99 --layer_size 128 --exp_name cartpole_rtg(3:58)
+python run.py --env_name CartPole-v1 -n 200 -b 1000 -ngpu -na --exp_name cartpole_na
+python run.py --env_name CartPole-v1 -n 200 -b 1000 -ngpu -rtg -na --exp_name cartpole_rtg_na
+
+
+python run.py --env_name CartPole-v1 -n 200 -b 4000 -ngpu --learning_rate 1e-3 --discount 0.99 --layer_size 128 --exp_name cartpole(4:30)
+python run.py --env_name CartPole-v1 -n 200 -b 4000 -ngpu -rtg --exp_name cartpole_rtg
+python run.py --env_name CartPole-v1 -n 200 -b 4000 -ngpu -na --exp_name cartpole_na
+python run.py --env_name CartPole-v1 -n 200 -b 4000 -ngpu -rtg -na --exp_name cartpole_rtg_na
+
+
+python run.py --env_name CartPole-v1 -n 100 -b 5000 -ngpu -rtg --exp_name cartpole_rtg_no_baseline
+python run.py --env_name CartPole-v1 -n 100 -b 5000 -ngpu -rtg --use_baseline --exp_name cartpole_rtg_baseline
+python run.py --env_name CartPole-v1 -n 100 -b 5000 -ngpu -rtg -na --exp_name cartpole_na_rtg_no_baseline
+python run.py --env_name CartPole-v1 -n 100 -b 5000 -ngpu -rtg -na --use_baseline --exp_name cartpole_na_rtg_baseline
+
+
+python run.py --env_name CartPole-v1 -n 100 -b 5000 -ngpu -rtg -blr 2e-3 -bgs 3 --use_baseline --exp_name cartpole_rtg_baseline_decreased
+python run.py --env_name CartPole-v1 -n 100 -b 5000 -ngpu -rtg -na -blr 2e-3 -bgs 3 --use_baseline --exp_name cartpole_na_rtg_baseline_decreased
