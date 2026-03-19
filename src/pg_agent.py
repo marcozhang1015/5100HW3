@@ -195,12 +195,12 @@ class PGAgent(nn.Module):
 
         ############################
         # YOUR IMPLEMENTATION HERE #
-        rewards = np.asarray(rewards, dtype=np.float32)
+        rewards =np.asarray(rewards, dtype=np.float32)
         q_values= np.zeros_like(rewards, dtype=np.float32)
         running_sum = 0.0
         for t in reversed(range(rewards.shape[0])):
             running_sum =rewards[t] +self.gamma * running_sum
-            q_values[t] =running_sum
+            q_values[t]=running_sum
         return q_values
         ############################
         pass
