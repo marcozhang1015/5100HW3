@@ -1,23 +1,38 @@
+"""Plot training returns for small and large batch experiments."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
-SMALL_RUNS = ["pg_cartpole_CartPole-v1_17-03-2026_03-55-54","pg_cartpole_rtg_CartPole-v1_17-03-2026_03-58-10","pg_cartpole_na_CartPole-v1_17-03-2026_02-27-26","pg_cartpole_rtg_na_CartPole-v1_17-03-2026_02-28-53"]
-LARGE_RUNS = ["pg_cartpole_CartPole-v1_17-03-2026_04-30-36","pg_cartpole_rtg_CartPole-v1_17-03-2026_02-51-22","pg_cartpole_na_CartPole-v1_17-03-2026_02-53-44","pg_cartpole_rtg_na_CartPole-v1_17-03-2026_02-55-20"]
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+
+SMALL_RUNS = [
+    "pg_cartpole_CartPole-v1_17-03-2026_03-55-54",
+    "pg_cartpole_rtg_CartPole-v1_17-03-2026_03-58-10",
+    "pg_cartpole_na_CartPole-v1_17-03-2026_02-27-26",
+    "pg_cartpole_rtg_na_CartPole-v1_17-03-2026_02-28-53",
+]
+
+LARGE_RUNS = [
+    "pg_cartpole_CartPole-v1_17-03-2026_04-30-36",
+    "pg_cartpole_rtg_CartPole-v1_17-03-2026_02-51-22",
+    "pg_cartpole_na_CartPole-v1_17-03-2026_02-53-44",
+    "pg_cartpole_rtg_na_CartPole-v1_17-03-2026_02-55-20",
+]
 
 
-def load_run(run_dir: Path):
-    event_files = sorted(run_dir.glob("events.out.tfevents.*"))
+def load_training_curve(run_dir: Path):
+    event_files =sorted(run_dir.glob("events.out.tfevents.*"))
     ea = EventAccumulator(str(event_files[0]))
     ea.Reload()
 
-    env_steps = {e.step: e.value for e in ea.Scalars("Train_EnvstepsSoFar")}
-    avg_returns = {e.step: e.value for e in ea.Scalars("Train_AverageReturn")}
+    env_steps= {e.step: e.value for e in ea.Scalars("Train_EnvstepsSoFar")}
+    avg_returns= {e.step: e.value for e in ea.Scalars("Train_AverageReturn")}
 
-    steps = sorted(set(env_steps.keys()) & set(avg_returns.keys()))
-    xs = [env_steps[s] for s in steps]
-    ys = [avg_returns[s] for s in steps]
+    shared_steps = sorted(set(env_steps.keys()) & set(avg_returns.keys()))
+    xs= [env_steps[s] for s in shared_steps]
+    ys= [avg_returns[s] for s in shared_steps]
     return xs, ys
 
 
@@ -34,18 +49,8 @@ def plot_group(runs, title, output_path: Path):
 
 
 def main():
-    data_dir = Path("data")
-
-    small_runs = []
-    large_runs = []
-
-    for name in SMALL_RUNS:
-        xs, ys = load_run(data_dir / name)
-        small_runs.append((name, xs, ys))
-
-    for name in LARGE_RUNS:
-        xs, ys = load_run(data_dir / name)
-        large_runs.append((name, xs, ys))
+    small_runs =[(name, *load_training_curve(DATA_DIR / name)) for name in SMALL_RUNS]
+    large_runs =[(name, *load_training_curve(DATA_DIR / name)) for name in LARGE_RUNS]
 
     plot_group(
         small_runs,

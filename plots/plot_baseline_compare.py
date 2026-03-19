@@ -1,7 +1,11 @@
+"""Compare default vs decreased baseline settings on loss and eval return."""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
 BASELINE_RUNS = [
     "pg_cartpole_rtg_baseline_CartPole-v1_17-03-2026_18-35-49",
@@ -14,19 +18,19 @@ DECREASED_RUNS = [
 ]
 
 
-def load_run(run_dir: Path):
-    event_files = sorted(run_dir.glob("events.out.tfevents.*"))
+def load_aligned_series(run_dir: Path):
+    event_files =sorted(run_dir.glob("events.out.tfevents.*"))
     ea = EventAccumulator(str(event_files[0]))
     ea.Reload()
 
-    env_steps = {e.step: e.value for e in ea.Scalars("Train_EnvstepsSoFar")}
-    baseline_loss = {e.step: e.value for e in ea.Scalars("Baseline_Loss")}
-    eval_return = {e.step: e.value for e in ea.Scalars("Eval_AverageReturn")}
+    env_steps ={e.step: e.value for e in ea.Scalars("Train_EnvstepsSoFar")}
+    baseline_loss ={e.step: e.value for e in ea.Scalars("Baseline_Loss")}
+    eval_return ={e.step: e.value for e in ea.Scalars("Eval_AverageReturn")}
 
     def align(series):
-        steps = sorted(set(env_steps.keys()) & set(series.keys()))
-        xs = [env_steps[s] for s in steps]
-        ys = [series[s] for s in steps]
+        shared_steps = sorted(set(env_steps.keys()) & set(series.keys()))
+        xs = [env_steps[s] for s in shared_steps]
+        ys = [series[s] for s in shared_steps]
         return xs, ys
 
     return align(baseline_loss), align(eval_return)
@@ -45,19 +49,17 @@ def plot_group(runs, title, ylabel, filename):
 
 
 def main():
-    data_dir = Path("data")
-
-    base_loss_runs = []
-    base_perf_runs = []
+    base_loss_runs= []
+    base_perf_runs= []
     for name in BASELINE_RUNS:
-        (xs1, ys1), (xs2, ys2) = load_run(data_dir / name)
+        (xs1, ys1), (xs2, ys2) = load_aligned_series(DATA_DIR / name)
         base_loss_runs.append((name, xs1, ys1))
         base_perf_runs.append((name, xs2, ys2))
 
-    dec_loss_runs = []
-    dec_perf_runs = []
+    dec_loss_runs= []
+    dec_perf_runs= []
     for name in DECREASED_RUNS:
-        (xs1, ys1), (xs2, ys2) = load_run(data_dir / name)
+        (xs1, ys1), (xs2, ys2) = load_aligned_series(DATA_DIR / name)
         dec_loss_runs.append((name, xs1, ys1))
         dec_perf_runs.append((name, xs2, ys2))
 
