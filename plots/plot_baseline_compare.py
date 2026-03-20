@@ -1,5 +1,3 @@
-"""Compare default vs decreased baseline settings on loss and eval return."""
-
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -16,66 +14,66 @@ DECREASED_RUNS = [
     "pg_cartpole_rtg_baseline_decreased_CartPole-v1_17-03-2026_20-11-25",
     "pg_cartpole_na_rtg_baseline_decreased_CartPole-v1_17-03-2026_20-12-26",
 ]
+def main():
+    plt.figure(figsize=(7,5))
+    for name in BASELINE_RUNS + DECREASED_RUNS:
+        run_dir= DATA_DIR / name
+        event_files =sorted(run_dir.glob("events.out.tfevents.*"))
+        ea=EventAccumulator(str(event_files[0]))
+        ea.Reload()
 
+        env_steps=ea.Scalars("Train_EnvstepsSoFar")
+        baseline_loss =ea.Scalars("Baseline_Loss")
 
-def load_aligned_series(run_dir: Path):
-    event_files =sorted(run_dir.glob("events.out.tfevents.*"))
-    ea = EventAccumulator(str(event_files[0]))
-    ea.Reload()
+        step_to_env = {}
+        for item in env_steps:
+            step_to_env[item.step]= item.value
 
-    env_steps ={e.step: e.value for e in ea.Scalars("Train_EnvstepsSoFar")}
-    baseline_loss ={e.step: e.value for e in ea.Scalars("Baseline_Loss")}
-    eval_return ={e.step: e.value for e in ea.Scalars("Eval_AverageReturn")}
+        xs=[]
+        ys = []
+        for item in baseline_loss:
+            if item.step in step_to_env:
+                xs.append(step_to_env[item.step])
+                ys.append(item.value)
 
-    def align(series):
-        shared_steps = sorted(set(env_steps.keys()) & set(series.keys()))
-        xs = [env_steps[s] for s in shared_steps]
-        ys = [series[s] for s in shared_steps]
-        return xs, ys
+        plt.plot(xs,ys,label=name)
 
-    return align(baseline_loss), align(eval_return)
-
-
-def plot_group(runs, title, ylabel, filename):
-    plt.figure(figsize=(7, 5))
-    for name, xs, ys in runs:
-        plt.plot(xs, ys, label=name)
     plt.xlabel("Environment Steps")
-    plt.ylabel(ylabel)
-    plt.title(title)
+    plt.ylabel("Baseline Loss")
+    plt.title("Baseline Loss (Default vs Decreased)")
     plt.legend()
     plt.tight_layout()
-    plt.savefig(filename, dpi=150)
+    plt.savefig("baseline_loss_compare.png",dpi=150)
 
+    plt.figure(figsize=(7,5))
+    for name in BASELINE_RUNS + DECREASED_RUNS:
+        run_dir=DATA_DIR / name
+        event_files = sorted(run_dir.glob("events.out.tfevents.*"))
+        ea = EventAccumulator(str(event_files[0]))
+        ea.Reload()
 
-def main():
-    base_loss_runs= []
-    base_perf_runs= []
-    for name in BASELINE_RUNS:
-        (xs1, ys1), (xs2, ys2) = load_aligned_series(DATA_DIR / name)
-        base_loss_runs.append((name, xs1, ys1))
-        base_perf_runs.append((name, xs2, ys2))
+        env_steps = ea.Scalars("Train_EnvstepsSoFar")
+        eval_returns=ea.Scalars("Eval_AverageReturn")
 
-    dec_loss_runs= []
-    dec_perf_runs= []
-    for name in DECREASED_RUNS:
-        (xs1, ys1), (xs2, ys2) = load_aligned_series(DATA_DIR / name)
-        dec_loss_runs.append((name, xs1, ys1))
-        dec_perf_runs.append((name, xs2, ys2))
+        step_to_env={}
+        for item in env_steps:
+            step_to_env[item.step] = item.value
 
-    plot_group(
-        base_loss_runs + dec_loss_runs,
-        "Baseline Loss (Default vs Decreased)",
-        "Baseline Loss",
-        "baseline_loss_compare.png",
-    )
+        xs = []
+        ys=[]
+        for item in eval_returns:
+            if item.step in step_to_env:
+                xs.append(step_to_env[item.step])
+                ys.append(item.value)
 
-    plot_group(
-        base_perf_runs + dec_perf_runs,
-        "Eval Return (Default vs Decreased)",
-        "Average Return",
-        "eval_return_compare.png",
-    )
+        plt.plot(xs, ys,label=name)
+
+    plt.xlabel("Environment Steps")
+    plt.ylabel("Average Return")
+    plt.title("Eval Return (Default vs Decreased)")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("eval_return_compare.png",dpi=150)
 
 
 if __name__ == "__main__":

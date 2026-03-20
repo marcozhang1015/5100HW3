@@ -1,5 +1,3 @@
-"""Plot training returns for small and large batch experiments."""
-
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -20,49 +18,66 @@ LARGE_RUNS = [
     "pg_cartpole_na_CartPole-v1_17-03-2026_02-53-44",
     "pg_cartpole_rtg_na_CartPole-v1_17-03-2026_02-55-20",
 ]
+def main():
+    plt.figure(figsize=(7,5))
+    for name in SMALL_RUNS:
+        run_dir= DATA_DIR / name
+        event_files = sorted(run_dir.glob("events.out.tfevents.*"))
+        ea= EventAccumulator(str(event_files[0]))
+        ea.Reload()
 
+        env_steps= ea.Scalars("Train_EnvstepsSoFar")
+        avg_returns = ea.Scalars("Train_AverageReturn")
 
-def load_training_curve(run_dir: Path):
-    event_files =sorted(run_dir.glob("events.out.tfevents.*"))
-    ea = EventAccumulator(str(event_files[0]))
-    ea.Reload()
+        step_to_env={}
+        for item in env_steps:
+            step_to_env[item.step] = item.value
 
-    env_steps= {e.step: e.value for e in ea.Scalars("Train_EnvstepsSoFar")}
-    avg_returns= {e.step: e.value for e in ea.Scalars("Train_AverageReturn")}
+        xs=[]
+        ys=[]
+        for item in avg_returns:
+            if item.step in step_to_env:
+                xs.append(step_to_env[item.step])
+                ys.append(item.value)
 
-    shared_steps = sorted(set(env_steps.keys()) & set(avg_returns.keys()))
-    xs= [env_steps[s] for s in shared_steps]
-    ys= [avg_returns[s] for s in shared_steps]
-    return xs, ys
+        plt.plot(xs,ys,label=name)
 
-
-def plot_group(runs, title, output_path: Path):
-    plt.figure(figsize=(7, 5))
-    for name, xs, ys in runs:
-        plt.plot(xs, ys, label=name)
-    plt.title(title)
+    plt.title("Small Batch (batch size = 1000)")
     plt.xlabel("Environment Steps")
     plt.ylabel("Average Return")
     plt.legend()
     plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
+    plt.savefig(Path("learning_curve_small_batch.png"),dpi=150)
 
+    plt.figure(figsize=(7,5))
+    for name in LARGE_RUNS:
+        run_dir= DATA_DIR / name
+        event_files= sorted(run_dir.glob("events.out.tfevents.*"))
+        ea = EventAccumulator(str(event_files[0]))
+        ea.Reload()
 
-def main():
-    small_runs =[(name, *load_training_curve(DATA_DIR / name)) for name in SMALL_RUNS]
-    large_runs =[(name, *load_training_curve(DATA_DIR / name)) for name in LARGE_RUNS]
+        env_steps = ea.Scalars("Train_EnvstepsSoFar")
+        avg_returns= ea.Scalars("Train_AverageReturn")
 
-    plot_group(
-        small_runs,
-        "Small Batch (batch size = 1000)",
-        Path("learning_curve_small_batch.png"),
-    )
+        step_to_env = {}
+        for item in env_steps:
+            step_to_env[item.step]= item.value
 
-    plot_group(
-        large_runs,
-        "Large Batch (batch size = 4000)",
-        Path("learning_curve_large_batch.png"),
-    )
+        xs = []
+        ys = []
+        for item in avg_returns:
+            if item.step in step_to_env:
+                xs.append(step_to_env[item.step])
+                ys.append(item.value)
+
+        plt.plot(xs,ys,label=name)
+
+    plt.title("Large Batch (batch size = 4000)")
+    plt.xlabel("Environment Steps")
+    plt.ylabel("Average Return")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(Path("learning_curve_large_batch.png"),dpi=150)
 
 
 if __name__ == "__main__":

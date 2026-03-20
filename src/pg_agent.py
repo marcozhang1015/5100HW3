@@ -85,11 +85,11 @@ class PGAgent(nn.Module):
             critic_info: dict = None
             ############################
             # YOUR IMPLEMENTATION HERE #
-            losses= []
+            losses = []
             for _ in range(self.baseline_gradient_steps):
-                step_info =self.critic.update(obs, q_values)
+                step_info = self.critic.update(obs, q_values)
                 losses.append(step_info["Baseline Loss"])
-            critic_info={
+            critic_info = {
                 "Baseline Loss": np.mean(losses),
             }
             ############################
@@ -109,7 +109,9 @@ class PGAgent(nn.Module):
             q_values = None
             ############################
             # YOUR IMPLEMENTATION HERE #
-            q_values= [self._discounted_return(rews) for rews in rewards]
+            q_values = []
+            for rews in rewards:
+                q_values.append(self._discounted_return(rews))
             ############################
 
         else:
@@ -120,7 +122,9 @@ class PGAgent(nn.Module):
 
             ############################
             # YOUR IMPLEMENTATION HERE #
-            q_values=[self._discounted_reward_to_go(rews) for rews in rewards]
+            q_values = []
+            for rews in rewards:
+                q_values.append(self._discounted_reward_to_go(rews))
             ############################
 
         return q_values
@@ -136,7 +140,7 @@ class PGAgent(nn.Module):
 
         Operates on flat 1D NumPy arrays.
         """
-        if self.critic is None:   
+        if self.critic is None:
             advantages = q_values.copy()
         else:
             # run the critic and use it as a baseline to compute values and advantages
@@ -145,10 +149,11 @@ class PGAgent(nn.Module):
             ############################
             # YOUR IMPLEMENTATION HERE #
             with torch.no_grad():
-                obs_t= ptu.from_numpy(obs)
-                values_t= self.critic(obs_t)
-                values= ptu.to_numpy(values_t).reshape(-1)
-            advantages= q_values-values
+                obs_t = ptu.from_numpy(obs)
+                values_t = self.critic(obs_t)
+                values = ptu.to_numpy(values_t)
+            values = values.reshape(-1)
+            advantages = q_values - values
             ############################
             assert values.shape == q_values.shape
 
@@ -158,9 +163,9 @@ class PGAgent(nn.Module):
             # advantages = None
             ############################
             # YOUR IMPLEMENTATION HERE #
-            adv_mean= np.mean(advantages)
-            adv_std= np.std(advantages) + 1e-8
-            advantages= (advantages - adv_mean) / adv_std
+            adv_mean = np.mean(advantages)
+            adv_std = np.std(advantages)
+            advantages = (advantages - adv_mean) / (adv_std + 1e-8)
             ############################
 
         return advantages
@@ -178,10 +183,19 @@ class PGAgent(nn.Module):
 
         ############################
         # YOUR IMPLEMENTATION HERE #
-        rewards=np.asarray(rewards, dtype=np.float32)
-        discounts =np.power(self.gamma, np.arange(rewards.shape[0], dtype=np.float32))
-        discounted_sum =np.sum(discounts * rewards)
-        return np.full_like(rewards, discounted_sum, dtype=np.float32)
+        rewards = np.asarray(rewards)
+        discounted_sum = 0
+        discount = 1
+
+        for reward in rewards:
+            discounted_sum += discount * reward
+            discount *= self.gamma
+
+        returns = np.zeros_like(rewards)
+        for i in range(len(returns)):
+            returns[i] = discounted_sum
+
+        return returns
         ############################
         pass
 
@@ -195,12 +209,12 @@ class PGAgent(nn.Module):
 
         ############################
         # YOUR IMPLEMENTATION HERE #
-        rewards =np.asarray(rewards, dtype=np.float32)
-        q_values= np.zeros_like(rewards, dtype=np.float32)
+        rewards = np.asarray(rewards)
+        q_values = np.zeros_like(rewards)
         running_sum = 0.0
-        for t in reversed(range(rewards.shape[0])):
-            running_sum =rewards[t] +self.gamma * running_sum
-            q_values[t]=running_sum
+        for t in range(len(rewards) - 1, -1, -1):
+            running_sum = rewards[t] + self.gamma * running_sum
+            q_values[t] = running_sum
         return q_values
         ############################
         pass

@@ -44,7 +44,7 @@ class MLPPolicy(nn.Module):
                 size=layer_size,
             ).to(ptu.device)
             self.logstd = nn.Parameter(
-                torch.zeros(ac_dim, dtype=torch.float32, device=ptu.device)
+                torch.zeros(ac_dim, device=ptu.device)
             )
             parameters = itertools.chain([self.logstd], self.mean_net.parameters())
 
@@ -63,15 +63,15 @@ class MLPPolicy(nn.Module):
 
         ############################
         # YOUR IMPLEMENTATION HERE #
-        obs_t= ptu.from_numpy(obs)
-        action_dist =self.forward(obs_t)
-        action=action_dist.sample()
+        obs_t = ptu.from_numpy(obs)
+        action_dist = self.forward(obs_t)
+        action = action_dist.sample()
         action= ptu.to_numpy(action)
         if self.discrete:
-            action =action.reshape(-1)[0]
-            action =action.astype(np.int64)
+            action = action.item()
+            action = np.int64(action)
         else:
-            action= action.reshape(-1)
+            action = action.reshape(-1)
         ############################
 
         return action
@@ -88,15 +88,16 @@ class MLPPolicy(nn.Module):
 
             ############################
             # YOUR IMPLEMENTATION HERE #
-            logits =self.logits_net(obs)
-            action =distributions.Categorical(logits=logits)
+            logits = self.logits_net(obs)
+            action = distributions.Categorical(logits=logits)
             ############################
 
         else:
             # define the forward pass for a policy with a continuous action space.
-            mean_prob =self.mean_net(obs)
-            std_prob =torch.exp(self.logstd)
-            action =distributions.MultivariateNormal(mean_prob, scale_tril=torch.diag(std_prob))
+            mean_prob = self.mean_net(obs)
+            std_prob = torch.exp(self.logstd)
+            cov = torch.diag(std_prob)
+            action = distributions.MultivariateNormal(mean_prob, scale_tril=cov)
 
         return action
 
@@ -125,9 +126,9 @@ class MLPPolicyPG(MLPPolicy):
 
         ############################
         # YOUR IMPLEMENTATION HERE #
-        action_dist =self.forward(obs)
-        log_probs =action_dist.log_prob(actions)
-        loss =-(log_probs * advantages).mean()
+        action_dist = self.forward(obs)
+        log_probs = action_dist.log_prob(actions)
+        loss = -(log_probs * advantages).mean()
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()

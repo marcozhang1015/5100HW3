@@ -41,8 +41,8 @@ class ValueCritic(nn.Module):
 
         ############################
         # YOUR IMPLEMENTATION HERE #
-        values= self.network(obs)
-        values= values.squeeze(-1)
+        values = self.network(obs)
+        values = values.squeeze(-1)
         ############################
 
         return values
@@ -56,10 +56,10 @@ class ValueCritic(nn.Module):
         loss = None
         ############################
         # YOUR IMPLEMENTATION HERE #
-        values= self.forward(obs)
-        values= values.view(-1)
-        q_values =q_values.view(-1)
-        loss =F.mse_loss(values, q_values)
+        values = self.forward(obs)
+        values = values.view(-1)
+        q_values = q_values.view(-1)
+        loss = F.mse_loss(values, q_values)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
